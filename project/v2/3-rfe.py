@@ -9,8 +9,8 @@ import optuna
 from optuna.trial import Trial
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import recall_score
-def objective(trial:Trial):
-    
+
+def objective(trial:Trial):    
     # Example: X is your feature DataFrame, y is the label vector
     train_test_split_random_state = randint(0,1000)
     trial.set_user_attr("train_test_split_random_state", train_test_split_random_state)
@@ -32,8 +32,6 @@ def objective(trial:Trial):
         'max_features': trial.suggest_categorical('random_forest_classifier_max_features', ['sqrt', 'log2', None]),
     }
 
-    whiten = trial.suggest_categorical("whiten", [True, False])
-
     # Logistic Regression parameters
     C = trial.suggest_float("C", 1e-3, 1e3, log=True)
     penalty = trial.suggest_categorical("penalty", ["l1", "l2"])
@@ -47,11 +45,9 @@ def objective(trial:Trial):
         model = LogisticRegression(C=C, penalty=penalty, solver=solver, max_iter=max_iter_clf, random_state=random_state_clf)
     # Create the RFE object and rank features
     rfe = RFE(estimator=model, n_features_to_select=trial.suggest_int("n_features_to_select",2,X_train.shape[1]))  # choose number of features to keep
-    # rfe.fit(X_train, y_train)
 
     # Selected features mask
     pipeline = Pipeline(steps=[
-        # ("preprocessor", preprocessor),
         ("feature_selection", rfe),
         ("classifier", model),
     ])

@@ -30,7 +30,7 @@ def objective(trial):
         'num_class': len(set(y)),      # Required for multi-class
     }
 
-    bst = xgb.train(params, dtrain, num_boost_round=trial.suggest_int("n_estimators", 10, 2000))
+    bst = xgb.train(params, dtrain, num_boost_round=trial.suggest_int("n_estimators", 10, 5000))
     preds = bst.predict(dtest)
 
     return recall_score(y_test, preds, average='weighted')
@@ -47,16 +47,18 @@ if __name__ == "__main__":
 
     study = optuna.create_study(
         direction="maximize",
-        study_name="XGB_DMatrix",
-        storage="sqlite:///xgboost_dmatrix.db",
+        study_name="xgb",
+        storage="sqlite:///xgboost.db",
         load_if_exists=True
     )
 
     study.optimize(objective, n_trials=3000)
 
     # Train best model on full data
+    train_test_split_random_state = randint(0,1000)
+    trial.set_user_attr("train_test_split_random_state", train_test_split_random_state)
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2
+        X, y, test_size=train_test_split_random_state
     )
     
     d_train = xgb.DMatrix(X_train, label=y_train)

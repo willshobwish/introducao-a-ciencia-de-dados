@@ -19,10 +19,10 @@ def objective(trial:Trial):
     X, y, test_size=0.2, stratify=y, random_state=random_state_train_test_split
     )
 
-    C = trial.suggest_float("C", 1e-3, 1e3, log=True)
+    C = trial.suggest_float("C", 1e-4, 1e4, log=True)
     penalty = trial.suggest_categorical("penalty", ["l1", "l2"])
     solver = "liblinear" if penalty == "l1" else trial.suggest_categorical("solver", ["lbfgs", "saga"])
-    max_iter_clf = trial.suggest_int("max_iter_clf",100,10000)
+    max_iter_clf = trial.suggest_int("max_iter_clf",10,10000)
 
     random_state_clf = randint(0,1000)
     random_state_cv = randint(0,1000)
@@ -32,23 +32,13 @@ def objective(trial:Trial):
     pipe = Pipeline([
         ("clf", LogisticRegression(C=C, penalty=penalty, solver=solver, max_iter=max_iter_clf, random_state=random_state_clf)),
     ])
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state_cv)
-
-    recall_scores = []  
-
-    for train_idx, valid_idx in cv.split(X_train, y_train):
-        X_tr, X_val = X_train.iloc[train_idx], X_train.iloc[valid_idx]
-        y_tr, y_val = y_train[train_idx], y_train[valid_idx]
-
-        pipe.fit(X_tr, y_tr)
-        preds = pipe.predict(X_val)
-        recall_scores.append(recall_score(y_val, preds, average='weighted'))
-
-        if np.mean(recall_scores) == 0:
-            # Raise TrialPruned or simply RuntimeError to retry this trial
-            raise optuna.TrialPruned()  # tells Optuna to skip this trial and try another
-        else:
-            return np.mean(recall_scores)
+    pipe.fit(X_train, y_train)
+    preds = pipe.predict(X_test)
+    # Your true and predicted labels (already encoded)
+    recall_per_class = recall_score(y_test, preds, average=None)
+    dropout_index = le.transform(["Dropout"])[0]
+    dropout_recall = recall_per_class[dropout_index]
+    return dropout_recall
         
 if __name__ == "__main__":
     df = pd.read_csv(r'predict_students_dropout_and_academic_success.csv')
@@ -62,8 +52,11 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
 
     # Run Optuna
-    study = optuna.create_study(direction="maximize",study_name="no-name-e61ce508-2186-43ad-828f-bb8f0a6b8cc9",storage="sqlite:///logistic_regression_w.db",load_if_exists=True)
-    study.optimize(objective, n_trials=606)
+    study = optuna.create_study(direction="maximize",
+                                study_name="logistic_regression",
+                                storage="sqlite:///logistic_regression.db",
+                                load_if_exists=True)
+    study.optimize(objective, n_trials=3000)
 
     # Results
     print("Best trial:")

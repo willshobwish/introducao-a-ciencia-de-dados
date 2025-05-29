@@ -50,23 +50,26 @@ def objective(trial:Trial):
         ("scaler", col_transformer),
         ("clf", LogisticRegression(C=C, penalty=penalty, solver=solver, max_iter=max_iter_clf, random_state=random_state_clf)),
     ])
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state_cv)
+    pipe.fit(X_train,y_train)
+    preds = pipe.predict(X_test)
+    return recall_score(y_test,preds, average="weighted")
+    # cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state_cv)
 
-    recall_scores = []  
+    # recall_scores = []  
 
-    for train_idx, valid_idx in cv.split(X_train, y_train):
-        X_tr, X_val = X_train.iloc[train_idx], X_train.iloc[valid_idx]
-        y_tr, y_val = y_train[train_idx], y_train[valid_idx]
+    # for train_idx, valid_idx in cv.split(X_train, y_train):
+    #     X_tr, X_val = X_train.iloc[train_idx], X_train.iloc[valid_idx]
+    #     y_tr, y_val = y_train[train_idx], y_train[valid_idx]
 
-        pipe.fit(X_tr, y_tr)
-        preds = pipe.predict(X_val)
-        recall_scores.append(recall_score(y_val, preds, average='weighted'))
+    #     pipe.fit(X_tr, y_tr)
+    #     preds = pipe.predict(X_val)
+    #     recall_scores.append(recall_score(y_val, preds, average='weighted'))
 
-        if np.mean(recall_scores) == 0:
-            # Raise TrialPruned or simply RuntimeError to retry this trial
-            raise optuna.TrialPruned()  # tells Optuna to skip this trial and try another
-        else:
-            return np.mean(recall_scores)
+    #     if np.mean(recall_scores) == 0:
+    #         # Raise TrialPruned or simply RuntimeError to retry this trial
+    #         raise optuna.TrialPruned()  # tells Optuna to skip this trial and try another
+    #     else:
+    #         return np.mean(recall_scores)
         
 if __name__ == "__main__":
     df = pd.read_csv(r'predict_students_dropout_and_academic_success.csv')
@@ -80,8 +83,11 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
 
     # Run Optuna
-    study = optuna.create_study(direction="maximize",storage="sqlite:///logistic_regression.db",load_if_exists=True)
-    study.optimize(objective, n_trials=1000)
+    study = optuna.create_study(direction="maximize",
+                                storage="sqlite:///logistic_regression_transformed_columns.db",
+                                study_name="Logistic_regression_with_transformed_columns",
+                                load_if_exists=True)
+    # study.optimize(objective, n_trials=1000)
 
     # Results
     print("Best trial:")
