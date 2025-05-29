@@ -1,0 +1,29 @@
+- Optuna
+  - An open source hyperparameter optimization framework to automate hyperparameter search
+- logistic regression
+- PCA
+  - Principal component analysis (PCA).
+- RFE
+  - Feature ranking with recursive feature elimination.
+- Random Forest
+- XGBoost
+- CatBoost?
+- Algoritmos genéticos
+  - gplearn
+    - Genetic Programming in Python, with a scikit-learn inspired API
+  - tpot
+    - A Python Automated Machine Learning tool that optimizes machine learning pipelines using genetic programming.
+
+Workflow
+- Testar da forma que veio, sem nenhuma modificação
+  - Logistic regression
+  - Random Forest
+  - XGBoost
+- Utilizar diversos scalers em diversas colunas
+  - Logistic regression
+- Aplicar recursive feature elimination
+  - Logistic regression
+  - Random Forest
+- Aplicar algoritmos genéticos
+  - Tpot
+  - Gplearn

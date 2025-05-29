@@ -1,0 +1,15 @@
+artifact_uri: file:C:/Users/willi/github/introducao-a-ciencia-de-dados/mlruns/0/0546c58303f140f18e42c964291377ed/artifacts
+end_time: 1748545586276
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 0546c58303f140f18e42c964291377ed
+run_name: Logistic regression Default
+run_uuid: 0546c58303f140f18e42c964291377ed
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1748545581960
+status: 3
+tags: []
+user_id: willi

@@ -1,0 +1,16 @@
+artifact_uri: file:C:/Users/willi/github/introducao-a-ciencia-de-dados/mlruns/0/14561a589b0c4ec08c30c6ecf716b936/artifacts
+deleted_time: 1748545496165
+end_time: 1748545108568
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: deleted
+run_id: 14561a589b0c4ec08c30c6ecf716b936
+run_name: Default
+run_uuid: 14561a589b0c4ec08c30c6ecf716b936
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1748545103690
+status: 3
+tags: []
+user_id: willi
