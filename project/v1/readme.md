@@ -1,5 +1,0 @@
-- Regressão logistica 
-- Regressão linear
-- Random Forest
-- XGBoost
-- 
