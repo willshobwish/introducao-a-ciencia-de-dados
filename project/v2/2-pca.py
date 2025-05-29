@@ -68,7 +68,6 @@ def objective(trial):
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state_cv)
     
     recall_scores = []
-    recall_scores_dropout = []
 
     for train_idx, valid_idx in cv.split(X_train, y_train):
         X_tr, X_val = X_train.iloc[train_idx], X_train.iloc[valid_idx]
