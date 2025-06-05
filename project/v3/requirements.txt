@@ -9,3 +9,4 @@ mlflow
 catboost
 xgboost
 deap
+jupyter
