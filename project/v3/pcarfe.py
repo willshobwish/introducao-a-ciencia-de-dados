@@ -12,27 +12,10 @@ import pandas as pd
 from sklearn.metrics import f1_score, classification_report
 
 def objective(trial:optuna.Trial):
-    transformers = []
-    scaler_options = {
-    "standard": StandardScaler(),
-    "minmax": MinMaxScaler(),
-    "robust": RobustScaler(),
-    "ordinal": OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1),
-    "none":'passthrough'
-    }
-
     model = RandomForestClassifier()
-
-    for col in X.columns:
-        scaler_choice = trial.suggest_categorical(f"scaler_{col}", list(scaler_options.keys()))
-        transformers.append((f"{col}_scaler", scaler_options[scaler_choice], [col]))
-
-    col_transformer = ColumnTransformer(transformers)
-    steps = [("scaler", col_transformer)]
-
     pca_usage = trial.suggest_categorical(name="pca_usage", choices=[None, "pca"])
     rfe_usage = trial.suggest_categorical(name="rfe_usage", choices=[None, "rfe"])
-
+    steps = []
     if pca_usage:
         n_components = trial.suggest_int("pca__n_components", 2, X.shape[1])
         svd_solver = trial.suggest_categorical("pca__svd_solver", ["auto", "full", "arpack", "randomized"])
@@ -69,7 +52,9 @@ def objective(trial:optuna.Trial):
     # Modelo final
     steps.append(("classifier", model))
     pipe = Pipeline(steps)
+
     f1_scores = []
+
     for iteration in range(0, 10):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
 
@@ -90,15 +75,16 @@ def objective(trial:optuna.Trial):
 
 if __name__ == "__main__":
     df = pd.read_csv(r'predict_students_dropout_and_academic_success.csv')
-
+    df = df[df["Target"] != "Enrolled"]
+    
     X = df.iloc[:, :-1]
     y = df.iloc[:, -1]
 
-    le = LabelEncoder()
+    le = LabelEncoder() 
     y = le.fit_transform(y)
 
     study = optuna.create_study(direction="maximize",
-                                storage="sqlite:///random_forest_scaler.db",
+                                storage="sqlite:///pcarfe.db",
                                 load_if_exists=True,
                                 study_name="no-name-4edeb741-7c80-4857-9a8a-47563ca4f188")
     study.optimize(objective, n_trials=1000)
