@@ -13,26 +13,9 @@ from sklearn.metrics import f1_score, classification_report
 
 def objective(trial:optuna.Trial):
     model = RandomForestClassifier()
-    # pca_usage = trial.suggest_categorical(name="pca_usage", choices=[None, "pca"])
-    # rfe_usage = trial.suggest_categorical(name="rfe_usage", choices=[None, "rfe"])
+
     steps = []
-    # transformers = []
-    # scaler_options = {
-    # "standard": StandardScaler(),
-    # "minmax": MinMaxScaler(),
-    # "robust": RobustScaler(),
-    # "ordinal": OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1),
-    # "none":'passthrough'
-    # }
-    
-    # for col in X.columns:
-    #     scaler_choice = trial.suggest_categorical(f"scaler_{col}", list(scaler_options.keys()))
-    #     transformers.append((f"{col}_scaler", scaler_options[scaler_choice], [col]))
 
-    # col_transformer = ColumnTransformer(transformers)
-    # steps = [("scaler", col_transformer)]
-
-    # if pca_usage:
     n_components = trial.suggest_int("pca__n_components", 2, X.shape[1])
     svd_solver = trial.suggest_categorical("pca__svd_solver", ["auto", "full", "arpack", "randomized"])
     whiten = trial.suggest_categorical("pca__whiten", [True, False])
@@ -49,23 +32,6 @@ def objective(trial:optuna.Trial):
     )
     steps.append(("pca", pca))
 
-    # if rfe_usage:
-    #     if pca_usage:
-    #         # Number of features to keep
-    #         n_features = trial.suggest_int(name="rfe__n_features_to_select", low=1, high=n_components)
-    #     else:
-    #         n_features = trial.suggest_int(name="rfe__n_features_to_select", low=1, high=X.shape[1])
-
-    #     # Step: number or fraction of features to remove per iteration
-    #     rfe_step = trial.suggest_float("rfe__step", 0.1, 1.0)
-
-    #     rfe = RFE(estimator=model,
-    #             n_features_to_select=n_features,
-    #             step=rfe_step)
-
-    #     steps.append(("rfe", rfe))
-    
-    # # Modelo final
     steps.append(("classifier", model))
     pipe = Pipeline(steps)
 
