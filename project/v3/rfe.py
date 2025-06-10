@@ -61,42 +61,19 @@ if __name__ == "__main__":
     le = LabelEncoder() 
     y = le.fit_transform(y)
 
+    MAX_TRIALS = 1000
+
     study = optuna.create_study(direction="maximize",
                                 storage="sqlite:///rfe.db",
                                 load_if_exists=True,
                                 study_name="no-name-4edeb741-7c80-4857-9a8a-47563ca4f188")
-    study.optimize(objective, n_trials=1000)
+    completed_trials = len([t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE])
+    print(f"Trials completos até agora: {completed_trials}")
 
-    # Rebuild transformers from study.best_params
-    # transformers = []
-    # scaler_options = {  
-    #     "standard": StandardScaler(),
-    #     "minmax": MinMaxScaler(),
-    #     "robust": RobustScaler(),
-    #     "ordinal": OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1),
-    #     "none":'passthrough'
-    #     }
+    remaining_trials = MAX_TRIALS - completed_trials
 
-    # for key, value in study.best_params.items():
-    #     if key.startswith("scaler_"):
-    #         column_name = key.replace("scaler_", "")
-    #         scaler = scaler_options[value]
-    #         transformers.append((f"{column_name}_scaler", scaler, [column_name]))
-
-    # col_transformer = ColumnTransformer(transformers)
-    # pipe.fit(X_train, y_train)
-    # preds = pipe.predict(X_test)
-    # f1_score_per_class = f1_score(y_test, preds, average=None)
-    # dropout_index = le.transform(["Dropout"])[0]
-    # dropout_f1_score = f1_score_per_class[dropout_index]
-
-    # print("Random forest (without enrolled and scaler)")
-    # print("Dropout F1 Score:", dropout_f1_score)
-
-    # print(classification_report(y_test, preds,target_names=le.classes_))
-
-    # cm = confusion_matrix(y_test, preds)
-    # disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
-    # disp.plot(cmap="Blues")
-    # plt.title("Random forest without enrolled and scaler")
-    # plt.show()
+    if remaining_trials > 0:
+        print(f"Executando {remaining_trials} trials restantes...")
+        study.optimize(objective, n_trials=remaining_trials)
+    else:
+        print("Número máximo de trials já atingido. Nenhum novo trial será executado.")

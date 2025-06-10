@@ -99,10 +99,20 @@ def objective(trial: optuna.Trial):
 
 # Run Optuna
 if __name__ == "__main__":
+    MAX_TRIALS = 1000
     study = optuna.create_study(
         direction="maximize",
         study_name="catboost_pipeline",
         storage="sqlite:///catboost_pipeline.db",
         load_if_exists=True
     )
-    study.optimize(objective, n_trials=1000)
+    completed_trials = len([t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE])
+    print(f"Trials completos até agora: {completed_trials}")
+
+    remaining_trials = MAX_TRIALS - completed_trials
+
+    if remaining_trials > 0:
+        print(f"Executando {remaining_trials} trials restantes...")
+        study.optimize(objective, n_trials=remaining_trials)
+    else:
+        print("Número máximo de trials já atingido. Nenhum novo trial será executado.")

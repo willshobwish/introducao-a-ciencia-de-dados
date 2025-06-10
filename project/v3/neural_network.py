@@ -111,14 +111,25 @@ def objective(trial):
     # You can return dropout_f1_score instead of accuracy for tuning
     return dropout_f1_score
 
-study = optuna.create_study(direction="maximize",
-                            storage="sqlite:///nn.db",
-                            load_if_exists=True,
-                            study_name="nn")
-study.optimize(objective, n_trials=1000)
+if __name__ == "__main__":
+    MAX_TRIALS = 1000
+    study = optuna.create_study(direction="maximize",
+                                storage="sqlite:///nn.db",
+                                load_if_exists=True,
+                                study_name="nn")
+    completed_trials = len([t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE])
+    print(f"Trials completos até agora: {completed_trials}")
 
-print("Best trial:")
-print(study.best_trial)
+    remaining_trials = MAX_TRIALS - completed_trials
 
-best_params = study.best_trial.params
-final_model = Net(X_train_tensor.shape[1], study.best_trial, len(np.unique(y))).to("cuda")
+    if remaining_trials > 0:
+        print(f"Executando {remaining_trials} trials restantes...")
+        study.optimize(objective, n_trials=remaining_trials)
+    else:
+        print("Número máximo de trials já atingido. Nenhum novo trial será executado.")
+
+    print("Best trial:")
+    print(study.best_trial)
+
+    best_params = study.best_trial.params
+    final_model = Net(X_train_tensor.shape[1], study.best_trial, len(np.unique(y))).to("cuda")

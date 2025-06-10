@@ -63,8 +63,19 @@ if __name__ == "__main__":
     le = LabelEncoder() 
     y = le.fit_transform(y)
 
+    MAX_TRIALS = 1000
+
     study = optuna.create_study(direction="maximize",
                                 storage="sqlite:///scaler.db",
                                 load_if_exists=True,
                                 study_name="no-name-4edeb741-7c80-4857-9a8a-47563ca4f188")
-    study.optimize(objective, n_trials=1000)
+    completed_trials = len([t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE])
+    print(f"Trials completos até agora: {completed_trials}")
+
+    remaining_trials = MAX_TRIALS - completed_trials
+
+    if remaining_trials > 0:
+        print(f"Executando {remaining_trials} trials restantes...")
+        study.optimize(objective, n_trials=remaining_trials)
+    else:
+        print("Número máximo de trials já atingido. Nenhum novo trial será executado.")
