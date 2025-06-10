@@ -19,7 +19,21 @@ def objective(trial:optuna.Trial):
     "none":'passthrough'
     }
 
-    model = RandomForestClassifier()
+    n_estimators = trial.suggest_int("n_estimators", 30, 500)
+    max_depth = trial.suggest_int("max_depth", 3, 60)
+    min_samples_split = trial.suggest_int("min_samples_split", 2, 40)
+    min_samples_leaf = trial.suggest_int("min_samples_leaf", 1, 40)
+    max_features = trial.suggest_categorical("max_features", ["sqrt", "log2"])
+    bootstrap = trial.suggest_categorical("bootstrap", [True, False])
+
+    model = RandomForestClassifier(
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        min_samples_split=min_samples_split,
+        min_samples_leaf=min_samples_leaf,
+        max_features=max_features,
+        bootstrap=bootstrap
+    )
 
     for col in X.columns:
         scaler_choice = trial.suggest_categorical(f"scaler_{col}", list(scaler_options.keys()))

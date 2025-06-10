@@ -12,9 +12,23 @@ import pandas as pd
 from sklearn.metrics import f1_score, classification_report
 
 def objective(trial:optuna.Trial):
-    model = RandomForestClassifier()
-    steps = []
+    n_estimators = trial.suggest_int("n_estimators", 30, 500)
+    max_depth = trial.suggest_int("max_depth", 3, 60)
+    min_samples_split = trial.suggest_int("min_samples_split", 2, 40)
+    min_samples_leaf = trial.suggest_int("min_samples_leaf", 1, 40)
+    max_features = trial.suggest_categorical("max_features", ["sqrt", "log2"])
+    bootstrap = trial.suggest_categorical("bootstrap", [True, False])
 
+    model = RandomForestClassifier(
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        min_samples_split=min_samples_split,
+        min_samples_leaf=min_samples_leaf,
+        max_features=max_features,
+        bootstrap=bootstrap
+    )
+
+    steps = []
 
     n_features = trial.suggest_int(name="rfe__n_features_to_select", low=1, high=X.shape[1])
 
