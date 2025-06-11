@@ -8,60 +8,57 @@ from sklearn.ensemble import RandomForestClassifier
 import optuna
 import pandas as pd
 from sklearn.metrics import f1_score
+from concurrent.futures import ProcessPoolExecutor
 
-def objective(trial:optuna.Trial):
+def evaluate_fold(args):
+    """Function to be parallelized across processes"""
+    X, y, le, model_params, pca_params, iteration = args
+    
+    # Create fresh pipeline for each process
+    pca = PCA(**pca_params)
+    model = RandomForestClassifier(**model_params)
+    pipe = Pipeline([('pca', pca), ('classifier', model)])
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
+    pipe.fit(X_train, y_train)
+    preds = pipe.predict(X_test)
+    f1_score_per_class = f1_score(y_test, preds, average=None)
+    dropout_index = le.transform(["Dropout"])[0]
+    return f1_score_per_class[dropout_index]
 
-    n_estimators = trial.suggest_int("n_estimators", 30, 500)
-    max_depth = trial.suggest_int("max_depth", 3, 60)
-    min_samples_split = trial.suggest_int("min_samples_split", 2, 40)
-    min_samples_leaf = trial.suggest_int("min_samples_leaf", 1, 40)
-    max_features = trial.suggest_categorical("max_features", ["sqrt", "log2"])
-    bootstrap = trial.suggest_categorical("bootstrap", [True, False])
-
-    model = RandomForestClassifier(
-        n_estimators=n_estimators,
-        max_depth=max_depth,
-        min_samples_split=min_samples_split,
-        min_samples_leaf=min_samples_leaf,
-        max_features=max_features,
-        bootstrap=bootstrap
-    )
-
-    steps = []
-
+def objective(trial: optuna.Trial):
+    # Model parameters
+    model_params = {
+        'n_estimators': trial.suggest_int("n_estimators", 30, 500),
+        'max_depth': trial.suggest_int("max_depth", 3, 60),
+        'min_samples_split': trial.suggest_int("min_samples_split", 2, 40),
+        'min_samples_leaf': trial.suggest_int("min_samples_leaf", 1, 40),
+        'max_features': trial.suggest_categorical("max_features", ["sqrt", "log2"]),
+        'bootstrap': trial.suggest_categorical("bootstrap", [True, False])
+    }
+    
+    # PCA parameters
     n_components = trial.suggest_int("pca__n_components", 2, X.shape[1])
     svd_solver = trial.suggest_categorical("pca__svd_solver", ["auto", "full", "arpack", "randomized"])
-    whiten = trial.suggest_categorical("pca__whiten", [True, False])
-
-    # Optional: limit solvers for smaller n_components
     if svd_solver == "arpack":
-        # arpack only works with n_components < n_features
         n_components = min(n_components, X.shape[1] - 1)
-
-    pca = PCA(
-        n_components=n_components,
-        svd_solver=svd_solver,
-        whiten=whiten
-    )
-    steps.append(("pca", pca))
-
-    steps.append(("classifier", model))
-    pipe = Pipeline(steps)
-
-    f1_scores = []
-
-    for iteration in range(0, 10):
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
-
-        pipe.fit(X_train,y_train)
-        preds = pipe.predict(X_test)
-        f1_score_per_class = f1_score(y_test, preds, average=None)
-        dropout_index = le.transform(["Dropout"])[0]
-        dropout_f1_score = f1_score_per_class[dropout_index]
-        f1_scores.append(dropout_f1_score)
     
+    pca_params = {
+        'n_components': n_components,
+        'svd_solver': svd_solver,
+        'whiten': trial.suggest_categorical("pca__whiten", [True, False])
+    }
+    
+    # Precompute dropout index to avoid repeated transformations
+    dropout_index = le.transform(["Dropout"])[0]
+    
+    # Parallel execution
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        args = [(X, y, le, model_params, pca_params, i) for i in range(10)]
+        f1_scores = list(executor.map(evaluate_fold, args))
+    
+    # Statistics and trial attributes
     statistic, pvalue = wilcoxon(x=f1_scores)
-
     trial.set_user_attr("var", np.var(f1_scores))
     trial.set_user_attr("std", np.std(f1_scores))
     trial.set_user_attr("wilcoxon_statistic", statistic)
