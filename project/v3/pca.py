@@ -9,6 +9,7 @@ import optuna
 import pandas as pd
 from sklearn.metrics import f1_score
 from concurrent.futures import ProcessPoolExecutor
+import os
 
 def evaluate_fold(args):
     """Function to be parallelized across processes"""
@@ -53,7 +54,7 @@ def objective(trial: optuna.Trial):
     dropout_index = le.transform(["Dropout"])[0]
     
     # Parallel execution
-    with ProcessPoolExecutor(max_workers=4) as executor:
+    with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
         args = [(X, y, le, model_params, pca_params, i) for i in range(10)]
         f1_scores = list(executor.map(evaluate_fold, args))
     
